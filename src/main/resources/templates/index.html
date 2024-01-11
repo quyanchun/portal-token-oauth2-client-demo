@@ -104,11 +104,11 @@
     <h3>用户token（Access Token）</h3>
     <h4>授权码获取token（Authorization Code）</h4>
     <p class="pst">授权码：OAuth2.0标准授权流程，先 (重定向) 获取Code授权码，再 (Rest API) 获取 Access-Token 和 Openid </p>
-    <a th:href="@{${serverHost} + '/oauth?response_type=code&client_id='+${clientId} +'&redirect_uri=http://localhost:8888/' }">
+    <a id="href" th:href="@{${serverHost} + '/oauth?response_type=code&client_id='+${clientId} +'&redirect_uri=' }">
         <button>点击跳转授权登录</button>
     </a>
-    <code><span
-            th:utext="@{${serverHost} + '/oauth?response_type=code&client_id='+${clientId} +'&redirect_uri=http://localhost:8888/' }"></span>
+    <code><span id="href1"
+                th:utext="@{${serverHost} + '/oauth?response_type=code&client_id='+${clientId} +'&redirect_uri=' }"></span>
     </code>
     <h3>账号密码获取token（password）</h3>
     <p class="pst">在下面输入Server端的用户名和密码，使用密码式进行 OAuth2 授权登录</p>
@@ -180,6 +180,20 @@
 <script>window.jQuery || alert('当前页面CDN服务商已宕机，请将所有js包更换为本地依赖')</script>
 <script type="text/javascript">
 
+    window.onload = function () {
+        var currentUrl = window.location.href;
+        var baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf("/"));
+        // 更新 <a> 标签的 href
+        var authLink = document.getElementById("href");
+        var linkHref = authLink.getAttribute("href");
+        authLink.setAttribute("href", linkHref + baseUrl);
+        // 更新 <span> 标签的文本
+        var authSpan = document.getElementById("href1");
+        var spanText = authSpan.innerText || authSpan.textContent;
+        authSpan.innerText = spanText + baseUrl;
+    };
+
+
     // 根据code授权码进行登录
     function doLogin(code) {
         $.ajax({
@@ -217,16 +231,16 @@
             },
             dataType: 'json',
             timeout: 60000,
-            success: function(res) {
+            success: function (res) {
                 console.log('返回：', res);
-                if(res.code == 200) {
+                if (res.code == 200) {
                     setInfo(res.data);
                     layer.msg('登录成功！');
                 } else {
                     layer.msg(res.msg);
                 }
             },
-            error: function(xhr, type, errorThrown){
+            error: function (xhr, type, errorThrown) {
                 return layer.alert("异常：" + JSON.stringify(xhr));
             }
         });

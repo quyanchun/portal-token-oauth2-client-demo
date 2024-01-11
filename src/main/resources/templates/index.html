@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Portal-OAuth2-Client端-测试页</title>
+    <style type="text/css">
+        body {
+            background-color: #D0D9E0;
+        }
+
+        * {
+            margin: 0px;
+            padding: 0px;
+        }
+
+        .login-box {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 1em;
+        }
+
+        .info {
+            line-height: 30px;
+        }
+
+        .btn-box {
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn-box a {
+            margin-right: 10px;
+        }
+
+        .btn-box a:hover {
+            text-decoration: underline !important;
+        }
+
+        .login-box input {
+            line-height: 25px;
+            margin-bottom: 10px;
+            padding-left: 5px;
+        }
+
+        .login-box button {
+            padding: 5px 15px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        .login-box a {
+            text-decoration: none;
+        }
+
+        .pst {
+            color: #666;
+            margin-top: 15px;
+        }
+
+        .ps {
+            color: #666;
+            margin-left: 10px;
+        }
+
+        .login-box code {
+            display: block;
+            background-color: #F5F2F0;
+            border: 1px #ccc solid;
+            color: #600;
+            padding: 15px;
+            margin-top: 5px;
+            border-radius: 2px;
+        }
+
+        .info b, .info span {
+            color: green;
+        }
+
+        #userIdSelect {
+            width: 200px;
+            height: 30px;
+        }
+    </style>
+</head>
+<body>
+<div class="login-box">
+    <h2>Portal-OAuth2-Client端-测试页</h2> <br>
+    <div class="info">
+        <div>Server端： <span th:utext="${serverHost}"></span></div>
+        <div>当前账号id：
+            <b class="openid" th:utext="${openid}"></b>
+        </div>
+        <div>当前Access-Token： <span class="access_token"></span></div>
+        <div>当前Refresh-Token： <span class="refresh_token"></span></div>
+        <div>当前令牌包含Scope： <span class="scope"></span></div>
+        <div>当前Client-Token： <span class="client_token"></span></div>
+    </div>
+    <div class="btn-box">
+        <a href="javascript:logout();">登出</a>
+        <a href="/">回到首页</a>
+    </div>
+    <hr>
+    <br>
+    <h3>用户token（Access Token）</h3>
+    <h4>授权码获取token（Authorization Code）</h4>
+    <p class="pst">授权码：OAuth2.0标准授权流程，先 (重定向) 获取Code授权码，再 (Rest API) 获取 Access-Token 和 Openid </p>
+    <a th:href="@{${serverHost} + '/oauth?response_type=code&client_id='+${clientId} +'&redirect_uri=http://localhost:8888/' }">
+        <button>点击跳转授权登录</button>
+    </a>
+    <code><span
+            th:utext="@{${serverHost} + '/oauth?response_type=code&client_id='+${clientId} +'&redirect_uri=http://localhost:8888/' }"></span>
+    </code>
+    <h3>账号密码获取token（password）</h3>
+    <p class="pst">在下面输入Server端的用户名和密码，使用密码式进行 OAuth2 授权登录</p>
+    账号：<input name="username">
+    密码：<input name="password">
+    <button onclick="passwordLogin()">登录</button>
+    <code><span th:utext="${serverHost}"></span>/api/oauth2/token
+        <br>
+        请求方式：post
+        <br>
+        Content-Type:application/x-www-form-urlencoded
+        <br>
+        body:
+        <br>
+        &nbsp&nbsp grant_type:password
+        <br>
+        &nbsp&nbsp client_id:{value}
+        <br>
+        &nbsp&nbsp client_secret:{value}
+        <br>
+        &nbsp&nbsp username:zhangsan
+        <br>
+        &nbsp&nbsp password:zhangsan
+    </code>
+    <br>
+    <button onclick="refreshToken()">刷新令牌</button>
+    <span class="ps">我们可以拿着 Refresh-Token 去刷新我们的 Access-Token，每次刷新后旧Token将作废</span>
+    <code><span th:utext="${serverHost}"></span>/api/oauth2/refresh?grant_type=refresh_token&client_id={value}&client_secret={value}&refresh_token={value}</code>
+
+    <button onclick="getUserinfo()">获取账号信息</button>
+    <span class="ps">使用 Access-Token 置换资源: 获取账号昵称、头像、性别等信息 (Access-Token具备userinfo权限时才可以获取成功) </span>
+    <code><span th:utext="${serverHost}"></span>/api/oauth2/userinfo?access_token={value}</code>
+    <br>
+    <hr>
+    <h3>应用级token（Client Token）</h3>
+    <p class="pst">在OAuth2.0中还有一种针对
+        Client级别的授权，
+        即：Client-Token，代表应用自身的资源授权</p>
+    <p class="pst">Client-Token具有延迟作废特性，即：在每次获取最新Client-Token的时候，旧Client-Token不会立即过期，而是作为Past-Token再次
+        储存起来，资源请求方只要携带其中之一便可通过Token校验，这种特性保证了在大量并发请求时不会出现“新旧Token交替造成的授权失效”，
+        保证了服务的高可用</p>
+
+    <button onclick="getClientToken()">获取应用Client-Token</button>
+    <code><span th:utext="${serverHost}"></span>/api/oauth2/client_token?grant_type=client_credentials&client_id={value}&client_secret={value}</code>
+    <br>
+    <button onclick="getDeptinfo()">获取部门列表</button>
+    <code><span th:utext="${serverHost}"></span>/api/oauth2/deptInfo?client_token={value}&type=list</code>
+    <br>
+    <button onclick="getUserList()">获取本应用的用户列表</button>
+    <code><span th:utext="${serverHost}"></span>/api/oauth2/userList?client_token={value}&deptId={value}&nickName={value}&userName={value}&phonenumber={value}&pageNum=1&pageSize=10</code>
+    <br>
+    <p class="pst">先获取用户列表</p>
+    <span>userId:</span><select id="userIdSelect" class="userId"></select> <span>password:</span><input id="pwd">
+    <button onclick="resetPwd()">重置密码</button>
+    <code>请求方式：post<br>
+        <span th:utext="${serverHost}"></span>/api/oauth2/reset-password?client_token={value}
+        <br>
+        Content-Type:application/x-www-form-urlencoded
+        <br>
+        {"userId":"1739922033959661570","password":"aaa111" }
+    </code>
+    <br><br>
+    <span>更多资料请参考 Portal-Token 官方文档地址：</span>
+    <a href="http://doc.portal.mingxingtech.com">http://doc.portal.mingxingtech.com</a>
+    <div style="height: 200px;"></div>
+</div>
+<script src="https://unpkg.zhimg.com/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://www.layuicdn.com/layer-v3.1.1/layer.js"></script>
+<script>window.jQuery || alert('当前页面CDN服务商已宕机，请将所有js包更换为本地依赖')</script>
+<script type="text/javascript">
+
+    // 根据code授权码进行登录
+    function doLogin(code) {
+        $.ajax({
+            url: '/codeLogin?code=' + code,
+            dataType: 'json',
+            timeout: 60000,
+            success: function (res) {
+                console.log('返回：', res);
+                if (res.code == 200) {
+                    setInfo(res.data);
+                    layer.msg('登录成功！');
+                } else {
+                    layer.msg(res.msg);
+                }
+            },
+            error: function (xhr, type, errorThrown) {
+                alert("无效的code")
+                location.href = '/';
+            }
+        });
+    }
+
+    var code = getParam('code');
+    if (code) {
+        doLogin(code);
+    }
+
+    // 密码式-授权登录
+    function passwordLogin() {
+        $.ajax({
+            url: '/passwordLogin',
+            data: {
+                username: $('[name=username]').val(),
+                password: $('[name=password]').val()
+            },
+            dataType: 'json',
+            timeout: 60000,
+            success: function(res) {
+                console.log('返回：', res);
+                if(res.code == 200) {
+                    setInfo(res.data);
+                    layer.msg('登录成功！');
+                } else {
+                    layer.msg(res.msg);
+                }
+            },
+            error: function(xhr, type, errorThrown){
+                return layer.alert("异常：" + JSON.stringify(xhr));
+            }
+        });
+    }
+
+    // 根据 Refresh-Token 去刷新 Access-Token
+    function refreshToken() {
+        var refreshToken = $('.refresh_token').text();
+        if (refreshToken == '') {
+            return layer.alert('您还没有获取 Refresh-Token ，请先授权登录');
+        }
+        $.ajax({
+            url: '/refresh?refreshToken=' + refreshToken,
+            dataType: 'json',
+            timeout: 60000,
+            success: function (res) {
+                console.log('返回：', res);
+                if (res.code == 200) {
+                    setInfo(res.data);
+                    layer.msg('登录成功！');
+                } else {
+                    layer.msg(res.msg);
+                }
+            },
+            error: function (xhr, type, errorThrown) {
+                return layer.alert("异常：" + JSON.stringify(xhr));
+            }
+        });
+    }
+
+    // 使用 Access-Token 置换资源: 获取账号昵称、头像、性别等信息
+    function getUserinfo() {
+        var accessToken = $('.access_token').text();
+        if (accessToken == '') {
+            return layer.alert('您还没有获取 Access-Token ，请先授权登录');
+        }
+        $.ajax({
+            url: '/getUserinfo',
+            data: {accessToken: accessToken},
+            dataType: 'json',
+            timeout: 60000,
+            success: function (res) {
+                if (res.code == 200) {
+                    layer.alert(JSON.stringify(res.data));
+                } else {
+                    layer.alert(res.msg);
+                }
+            },
+            error: function (xhr, type, errorThrown) {
+                return layer.alert("异常：" + JSON.stringify(xhr));
+            }
+        });
+    }
+
+    // 注销
+    function logout() {
+        var accessToken = $('.access_token').text();
+        if (accessToken == '') {
+            return layer.alert('您还没有获取 Access-Token ，请先授权登录');
+        }
+        $.ajax({
+            url: '/logout',
+            data: {accessToken: accessToken},
+            dataType: 'json',
+            timeout: 60000,
+            success: function (res) {
+                location.href = '/';
+            },
+            error: function (xhr, type, errorThrown) {
+                return layer.alert("异常：" + JSON.stringify(xhr));
+            }
+        });
+    }
+
+    // 获取应用的 部门信息
+    function getDeptinfo() {
+        var client_token = $('.client_token').text();
+        if (client_token == '') {
+            return layer.alert('您还没有获取应用Client-Token ，请先获取');
+        }
+        $.ajax({
+            url: '/deptInfo',
+            data: {clientToken: client_token},
+            dataType: 'json',
+            timeout: 60000,
+            success: function (res) {
+                if (res.code == 200) {
+                    layer.alert(JSON.stringify(res.rows));
+                } else {
+                    layer.alert(res.msg);
+                }
+            },
+            error: function (xhr, type, errorThrown) {
+                return layer.alert("异常：" + JSON.stringify(xhr));
+            }
+        });
+    }
+
+    function getUserList() {
+        var client_token = $('.client_token').text();
+        if (client_token == '') {
+            return layer.alert('您还没有获取应用Client-Token ，请先获取');
+        }
+        $.ajax({
+            url: '/userList',
+            data: {clientToken: client_token},
+            dataType: 'json',
+            timeout: 60000,
+            success: function (res) {
+                if (res.code == 200) {
+                    layer.alert(JSON.stringify(res.rows));
+                    // 成功获取数据后，动态生成下拉框选项
+                    var userIdSelect = $('#userIdSelect');
+                    userIdSelect.empty();  // 清空原有选项
+                    // 遍历数据，添加每个选项
+                    $.each(res.rows, function (index, item) {
+                        userIdSelect.append('<option value="' + item.userId + '">' + item.userName + '</option>');
+                    });
+                } else {
+                    layer.alert(res.msg);
+                }
+            },
+            error: function (xhr, type, errorThrown) {
+                return layer.alert("异常：" + JSON.stringify(xhr));
+            }
+        });
+    }
+
+    function resetPwd() {
+        var client_token = $('.client_token').text();
+        var userId = $('#userIdSelect').val();
+        var pwd = $('#pwd').val();
+        if (client_token == '') {
+            return layer.alert('您还没有获取应用Client-Token ，请先获取');
+        }
+        if (pwd == '') {
+            return layer.alert('需要输入密码');
+        }
+        $.ajax({
+            url: '/resetPwd/' + client_token,
+            type: 'POST',
+            data: {userId: userId, password: pwd},
+            dataType: 'json',
+            timeout: 60000,
+            success: function (res) {
+                layer.alert(res.msg);
+            },
+            error: function (xhr, type, errorThrown) {
+                return layer.alert("异常：" + JSON.stringify(xhr));
+            }
+        });
+    }
+
+    // 获取应用的 Client-Token
+    function getClientToken() {
+        $.ajax({
+            url: '/clientToken',
+            dataType: 'json',
+            timeout: 60000,
+            success: function (res) {
+                console.log('返回：', res);
+                if (res.code == 200) {
+                    setInfo(res.data);
+                    layer.msg('获取成功！');
+                } else {
+                    layer.msg(res.msg);
+                }
+            },
+            error: function (xhr, type, errorThrown) {
+                return layer.alert("异常：" + JSON.stringify(xhr));
+            }
+        });
+    }
+
+
+    // 写入数据
+    function setInfo(info) {
+        console.log('info', info);
+        for (var key in info) {
+            $('.' + key).text(info[key]);
+        }
+        if ($('.openid').text() == '') {
+            $('.openid').html('<b style="color: #E00;">未登录</b>')
+        }
+    }
+
+    setInfo({});
+
+    // 从url中查询到指定名称的参数值
+    function getParam(name, defaultValue) {
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        for (var i = 0; i < vars.length; i++) {
+            var pair = vars[i].split("=");
+            if (pair[0] == name) {
+                return pair[1];
+            }
+        }
+        return (defaultValue == undefined ? null : defaultValue);
+    }
+
+</script>
+</body>
+</html>

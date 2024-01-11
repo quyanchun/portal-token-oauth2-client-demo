@@ -1,0 +1,10 @@
+server:
+    port: 8888
+
+# portal-token
+portal-token:
+    # oauth2
+    oauth2:
+        server_host: http://127.0.0.1:1818
+        client_id: 33fc7d1ca75c481696480749dfe33d30
+        client_secret: fnefMjUxMjIwMjMxNzM5MzQ5ODEaf8

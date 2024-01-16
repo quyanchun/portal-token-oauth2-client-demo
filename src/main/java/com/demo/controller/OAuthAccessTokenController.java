@@ -33,7 +33,7 @@ public class OAuthAccessTokenController {
 	public TResult codeLogin(String code) {
 		// 调用Server端接口，获取 Access-Token 以及其他信息
 		System.out.println(code);
- 		return TResult.ok(Oauth2TokenUtil.tokenByToken(code));
+ 		return TResult.ok(Oauth2TokenUtil.tokenByCode(code));
 	}
 
 
